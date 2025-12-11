@@ -10,5 +10,5 @@ public class AppDBContext: DbContext
         
     }
     
-    public BbSet<Entidad>Entidad { get; set; }
+    public BbSet<Entidad>Entidad { get; set; };
 }
