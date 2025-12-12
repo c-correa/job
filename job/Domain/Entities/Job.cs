@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
 /// <summary>
-/// Represents a job posting in the system
+/// Represents a job posting/vacancy in the system
 /// </summary>
 public class Job
 {
@@ -41,12 +42,35 @@ public class Job
     public CompanyProfile? CompanyProfile { get; set; }
     
     /// <summary>
+    /// Job location (city, country, or "Remote")
+    /// </summary>
+    [StringLength(300)]
+    public string? Location { get; set; }
+    
+    /// <summary>
+    /// Type of employment (Full-time, Part-time, Contract, etc.)
+    /// </summary>
+    public JobType? JobType { get; set; }
+    
+    /// <summary>
+    /// Required experience level for the position
+    /// </summary>
+    public ExperienceLevel? ExperienceLevel { get; set; }
+    
+    /// <summary>
     /// Salary range or amount
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public decimal? Salary { get; set; }
     
     /// <summary>
-    /// Whether the job is currently active
+    /// Required skills for this job (comma-separated or JSON)
+    /// </summary>
+    [StringLength(1000)]
+    public string? RequiredSkills { get; set; }
+    
+    /// <summary>
+    /// Whether the job is currently active and accepting applications
     /// </summary>
     public bool IsActive { get; set; } = true;
     

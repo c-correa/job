@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: joblink-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: joblink_db
+      POSTGRES_USER: joblink_user
+      POSTGRES_PASSWORD: joblink_password_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432" # External:Internal (using 5434 to avoid conflicts)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - joblink-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U joblink_user -d joblink_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin - PostgreSQL Management Tool
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: joblink-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@joblink.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - joblink-network
+    depends_on:
+      - postgres
+
+  # .NET Web API Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: joblink-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=joblink_db;Username=joblink_user;Password=joblink_password_2024"
+      Jwt__SecretKey: "YourSuperSecretKeyForJWTTokenGeneration2024!@#"
+      Jwt__Issuer: "JobLinkAPI"
+      Jwt__Audience: "JobLinkClient"
+      Jwt__ExpiryInHours: "24"
+    ports:
+      - "5001:8080"
+    networks:
+      - joblink-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  joblink-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local

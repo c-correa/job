@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Domain.Enums;
 
 namespace Applications.DTOs;
 
@@ -23,8 +24,7 @@ public class ApplicationDto
     public string? CoverLetter { get; set; }
     
     [Required]
-    [StringLength(50)]
-    public string Status { get; set; } = "Pending";
+    public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
     
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

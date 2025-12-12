@@ -105,6 +105,13 @@ public class AppDBContext : DbContext
             // Configure decimal precision for Salary
             entity.Property(e => e.Salary)
                 .HasPrecision(18, 2);
+                
+            // Store enums as integers in database
+            entity.Property(e => e.JobType)
+                .HasConversion<int?>();
+                
+            entity.Property(e => e.ExperienceLevel)
+                .HasConversion<int?>();
         });
 
         // Configure Application entity
@@ -125,6 +132,10 @@ public class AppDBContext : DbContext
                 .WithMany(c => c.Applications)
                 .HasForeignKey(e => e.CandidateProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+                
+            // Store ApplicationStatus enum as integer in database
+            entity.Property(e => e.Status)
+                .HasConversion<int>();
         });
         
         // Configure CandidateSkill entity

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -46,11 +47,10 @@ public class Application
     public string? CoverLetter { get; set; }
     
     /// <summary>
-    /// Application status (e.g., Pending, Reviewed, Accepted, Rejected)
+    /// Application status (Pending, UnderReview, Accepted, Rejected, etc.)
     /// </summary>
     [Required]
-    [StringLength(50)]
-    public string Status { get; set; } = "Pending";
+    public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
     
     /// <summary>
     /// Date when the application was submitted

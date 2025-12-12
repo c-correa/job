@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using Domain.Enums;
 
 namespace Applications.DTOs;
 
 /// <summary>
-/// Data Transfer Object for Jobs
+/// Data Transfer Object for Jobs/Vacancies
 /// </summary>
 public class JobDto
 {
@@ -21,10 +22,17 @@ public class JobDto
     
     public string? CompanyName { get; set; }
     
-    [StringLength(200)]
+    [StringLength(300)]
     public string? Location { get; set; }
     
+    public JobType? JobType { get; set; }
+    
+    public ExperienceLevel? ExperienceLevel { get; set; }
+    
     public decimal? Salary { get; set; }
+    
+    [StringLength(1000)]
+    public string? RequiredSkills { get; set; }
     
     public bool IsActive { get; set; } = true;
     
