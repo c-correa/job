@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Briefcase, Code, Clock, Eye, EyeOff, ArrowLeft, Building2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from './services/api';
+import { authService } from '../services/api';
 
 // --- Componentes UI Reutilizables (Basados en tu estilo) ---
 

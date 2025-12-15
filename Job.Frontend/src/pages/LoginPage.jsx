@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { authService } from './services/api';
+import { authService } from '../services/api';
 
 // --- Componentes UI Reutilizables ---
 

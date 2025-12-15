@@ -1,4 +1,5 @@
 import React from 'react';
+import { authService } from '../services/api';
 import { Search, MapPin, DollarSign, Briefcase, Building2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 

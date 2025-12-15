@@ -56,7 +56,7 @@ export const companyService = {
     },
     getMyCompany: async (userId) => {
         const allCompanies = await companyService.getAll();
-        return allCompanies.find(c => c.userId === userId);
+        return allCompanies.find(c => (c.userId == userId || c.UserId == userId));
     }
 };
 
@@ -75,6 +75,19 @@ export const jobService = {
             applicationsCount: response.data.length,
             interviewsCount: response.data.filter(a => a.status === 4).length
         };
+    },
+    create: async (jobData) => {
+        const response = await api.post('/jobs', jobData);
+        return response.data;
+    },
+    delete: async (id) => {
+        await api.delete(`/jobs/${id}`);
+    },
+    updateStatus: async (id, isActive) => {
+        const response = await api.patch(`/jobs/${id}/status`, isActive, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        return response.data;
     }
 };
 
