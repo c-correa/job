@@ -55,8 +55,37 @@ export const companyService = {
         return response.data;
     },
     getMyCompany: async (userId) => {
+        console.log("🔍 getMyCompany called with userId:", userId, "Type:", typeof userId);
         const allCompanies = await companyService.getAll();
-        return allCompanies.find(c => (c.userId == userId || c.UserId == userId));
+        console.log("📊 All companies in DB:", allCompanies);
+        const found = allCompanies.find(c => {
+            console.log(`Comparing company userId ${c.userId} (type: ${typeof c.userId}) with search ${userId} (type: ${typeof userId})`);
+            return c.userId == userId || c.UserId == userId;
+        });
+        console.log("✅ Found company:", found);
+        return found;
+    }
+};
+
+export const candidateService = {
+    getAll: async () => {
+        const response = await api.get('/candidates');
+        return response.data;
+    },
+    getById: async (id) => {
+        const response = await api.get(`/candidates/${id}`);
+        return response.data;
+    },
+    getMyCandidate: async (userId) => {
+        const allCandidates = await candidateService.getAll();
+        console.log("Looking for candidate with userId:", userId);
+        console.log("All candidates:", allCandidates);
+        const found = allCandidates.find(c => {
+            console.log("Checking candidate:", c, "c.userId:", c.userId, "c.UserId:", c.UserId);
+            return c.userId == userId || c.UserId == userId;
+        });
+        console.log("Found candidate:", found);
+        return found;
     }
 };
 
@@ -98,6 +127,16 @@ export const applicationService = {
     },
     getByJobId: async (jobId) => {
         const response = await api.get(`/applications/job/${jobId}`);
+        return response.data;
+    },
+    create: async (applicationData) => {
+        const response = await api.post('/applications', applicationData);
+        return response.data;
+    },
+    updateStatus: async (applicationId, newStatus) => {
+        const response = await api.patch(`/applications/${applicationId}/status`, newStatus, {
+            headers: { 'Content-Type': 'application/json' }
+        });
         return response.data;
     }
 };

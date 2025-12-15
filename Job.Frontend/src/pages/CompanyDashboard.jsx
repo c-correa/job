@@ -73,29 +73,40 @@ export default function CompanyDashboard() {
                 return;
             }
 
+            // Get authenticated user data
             let userData = await authService.getMe();
-            // Fallback for ID type mismatch
-            const storedUser = JSON.parse(localStorage.getItem('user'));
-            if (storedUser) {
-                const numericId = storedUser.userId || storedUser.UserId;
-                if (numericId) {
-                    userData = { ...userData, userId: numericId };
-                }
+
+            // CRITICAL FIX: JWT claims return userId as string, need to parse to integer
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            let numericId = storedUser.userId || storedUser.UserId;
+
+            // Parse from getMe if not in localStorage
+            if (!numericId && userData.userId) {
+                numericId = parseInt(userData.userId);
             }
+
+            // Ensure it's always a number
+            numericId = parseInt(numericId);
+            userData = { ...userData, userId: numericId };
+
+            console.log("CompanyDashboard - Using userId:", numericId, "Type:", typeof numericId);
             setUser(userData);
 
-            const myCompany = await companyService.getMyCompany(userData.userId);
+            const myCompany = await companyService.getMyCompany(numericId);
             setCompany(myCompany);
 
             if (myCompany) {
+                console.log("Company found:", myCompany);
                 // 1. Fetch Company Jobs
                 const companyJobs = await jobService.getAll(myCompany.id);
+                console.log("Company jobs fetched:", companyJobs);
 
                 // 2. Fetch All Applications (Backend doesn't support optimized per-job fetch)
                 // We fetch once to avoid overloading the server with parallel requests
                 let allApplications = [];
                 try {
                     allApplications = await applicationService.getAll();
+                    console.log("All applications fetched:", allApplications);
                 } catch (e) {
                     console.error("Failed to fetch applications", e);
                     showToast("Could not load application data", "error");
@@ -104,6 +115,7 @@ export default function CompanyDashboard() {
                 const myJobIds = new Set(companyJobs.map(j => j.id));
                 // Filter locally
                 const myApplications = allApplications.filter(a => myJobIds.has(a.jobId));
+                console.log("My applications (filtered):", myApplications);
 
                 // 3. Stats
                 setStats({
@@ -133,8 +145,11 @@ export default function CompanyDashboard() {
 
                 // Sort by date desc
                 jobsWithStats.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                console.log("Jobs with stats:", jobsWithStats);
 
                 setJobs(jobsWithStats);
+            } else {
+                console.warn("No company profile found for user");
             }
         } catch (error) {
             console.error("Failed to load dashboard data", error);

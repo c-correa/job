@@ -107,10 +107,11 @@ export default function RegisterPage() {
                 email: formData.email
             });
 
-            const { token, userId } = authData;
-            // Token already stored by authService.register if I update api.js, but let's double check.
-            // Wait, my api.js implementation of register returned response.data but didn't auto-set token.
-            // I should probably manually set it here just in case or rely on the return.
+            const authResponse = authData;
+            // Handle both casing possibilities safely
+            const token = authResponse.token || authResponse.Token;
+            const numericId = authResponse.userId || authResponse.UserId;
+
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(authData));
 
@@ -135,7 +136,7 @@ export default function RegisterPage() {
             if (role === 'candidate') {
                 profileUrl = 'http://localhost:5000/api/candidates';
                 profileBody = {
-                    userId: userId,
+                    userId: numericId,
                     email: formData.email,
                     yearsOfExperience: parseInt(formData.experience) || 0,
                     summary: `Candidate with skills: ${formData.skills}`,
@@ -143,7 +144,7 @@ export default function RegisterPage() {
             } else {
                 profileUrl = 'http://localhost:5000/api/companies';
                 profileBody = {
-                    userId: userId,
+                    userId: numericId,
                     email: formData.email,
                     companyName: formData.companyName,
                     description: 'Company registered via web'

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { authService } from '../services/api';
+import { authService, companyService, candidateService } from '../services/api';
 
 // --- Componentes UI Reutilizables ---
 
@@ -86,13 +86,36 @@ export default function LoginPage() {
         try {
             const data = await authService.login(formData.username, formData.password);
 
-            // Toast and redirect handled by component state/logic usually, but here we just navigate
+            // CRITICAL: Save userId to localStorage for persistence
+            const userId = parseInt(data.userId || data.UserId);
+            const userToStore = {
+                ...data,
+                userId: userId // Ensure it's stored as number
+            };
+
+            console.log("Login successful, storing user:", userToStore);
+            localStorage.setItem('user', JSON.stringify(userToStore));
+
+            // Detect actual user role from database
+            const [candidateProfile, companyProfile] = await Promise.all([
+                candidateService.getMyCandidate(userId).catch(() => null),
+                companyService.getMyCompany(userId).catch(() => null)
+            ]);
+
+            let targetDashboard = '/dashboard'; // default fallback
+
+            if (candidateProfile) {
+                targetDashboard = '/dashboard-coder';
+            } else if (companyProfile) {
+                targetDashboard = '/dashboard';
+            }
+
             toast.success('¡Bienvenido de nuevo!', {
                 description: `Has iniciado sesión correctamente como ${data.username || formData.username}`,
                 duration: 3000,
             });
 
-            setTimeout(() => navigate('/dashboard'), 1000);
+            setTimeout(() => navigate(targetDashboard), 1000);
 
         } catch (error) {
             console.error(error);
