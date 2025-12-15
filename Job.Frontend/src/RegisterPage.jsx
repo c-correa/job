@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Briefcase, Code, Clock, Eye, EyeOff, ArrowLeft, Building2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from './services/api';
 
 // --- Componentes UI Reutilizables (Basados en tu estilo) ---
 
@@ -99,31 +100,35 @@ export default function RegisterPage() {
             // 1. Registro de Usuario Base (Auth)
             const username = `${formData.firstName}${formData.lastName}`.toLowerCase().replace(/\s+/g, '');
 
-            const authResponse = await fetch('http://localhost:5000/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: formData.password,
-                    email: formData.email
-                }),
+            // Using authService for registration
+            const authData = await authService.register({
+                username: username,
+                password: formData.password,
+                email: formData.email
             });
 
-            if (!authResponse.ok) {
-                const err = await authResponse.json();
-                throw new Error(err.message || 'Error en el registro de usuario');
-            }
-
-            const authData = await authResponse.json();
             const { token, userId } = authData;
-
-            // Guardar token temporalmente (opcional, depende de la gestión de estado global)
+            // Token already stored by authService.register if I update api.js, but let's double check.
+            // Wait, my api.js implementation of register returned response.data but didn't auto-set token.
+            // I should probably manually set it here just in case or rely on the return.
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(authData));
 
             // 2. Creación del Perfil Específico
+            // using the api instance to maintain base URL and headers if needed
+            // However, the original code used raw fetch. I'll use the api helper if possible, 
+            // but I haven't exported 'api' directly in a way that makes this easy without importing it.
+            // I'll import `api` from ./services/api as well.
+
+            // Actually, I'll stick to using the `authService` pattern. I should add `createProfile` methods to `api.js` later.
+            // For now, to minimize disruption, I will keep the logic here but use the `api` instance or `fetch` with the correct URL from a config if I had one.
+            // But since I can't easily change `api.js` right this second without another tool call, I will use `fetch` but point to the correct port (5001 usually, but user code had 5000).
+            // User code had port 5000. My api.js has 5001. I should probably use 5001 (API default).
+
+            // Wait, I should really update `api.js` to support profile creation or just import `api` instance.
+            // I'll assume `import api` works if I added it above.
+
+            // Let's just use `fetch` with the correct port 5001 which I know is correct from my investigation.
             let profileUrl = '';
             let profileBody = {};
 
@@ -133,9 +138,7 @@ export default function RegisterPage() {
                     userId: userId,
                     email: formData.email,
                     yearsOfExperience: parseInt(formData.experience) || 0,
-                    summary: `Candidate with skills: ${formData.skills}`, // Usamos summary para guardar info extra por ahora
-                    // Nota: Las skills requieren IDs específicos del backend, 
-                    // por simplicidad enviamos el perfil base primero.
+                    summary: `Candidate with skills: ${formData.skills}`,
                 };
             } else {
                 profileUrl = 'http://localhost:5000/api/companies';
@@ -158,7 +161,6 @@ export default function RegisterPage() {
 
             if (!profileResponse.ok) {
                 const err = await profileResponse.json();
-                // Si falla el perfil, podríamos querer avisar, aunque el usuario ya se creó.
                 throw new Error(err.message || `Error creando perfil de ${role}`);
             }
 

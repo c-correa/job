@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { authService } from './services/api';
 
 // --- Componentes UI Reutilizables ---
 
@@ -83,34 +84,15 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username: formData.username,
-                    password: formData.password
-                })
-            });
+            const data = await authService.login(formData.username, formData.password);
 
-            if (!response.ok) {
-                throw new Error('Credenciales inválidas');
-            }
-
-            const data = await response.json();
-
-            // Guardar sesión
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data));
-
+            // Toast and redirect handled by component state/logic usually, but here we just navigate
             toast.success('¡Bienvenido de nuevo!', {
-                description: `Has iniciado sesión correctamente como ${data.username}`,
+                description: `Has iniciado sesión correctamente como ${data.username || formData.username}`,
                 duration: 3000,
             });
 
-            // Redirigir (por ahora al home, pero podría ser dashboard)
-            setTimeout(() => navigate('/'), 1000);
+            setTimeout(() => navigate('/dashboard'), 1000);
 
         } catch (error) {
             console.error(error);
