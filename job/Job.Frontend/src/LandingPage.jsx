@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, MapPin, DollarSign, Briefcase, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // --- Componentes UI Reutilizables ---
 
@@ -57,21 +58,24 @@ const JobCard = ({ title, company, type, tags, modality, wage }) => (
 
 // --- Secciones Principales ---
 
-const Navbar = () => (
-    <nav className="flex justify-between items-center py-5 px-6 md:px-12 max-w-7xl mx-auto w-full bg-white">
-        <div className="text-[#191e4a] text-[28px] font-black tracking-tighter">
-            HireTech
-        </div>
-        <div className="flex gap-6 items-center">
-            <button className="text-[#191e4a] font-semibold text-[14px] hover:text-[#655be9] transition-colors">
-                Sign In
-            </button>
-            <button className="text-[#191e4a] font-semibold text-[14px] hover:text-[#655be9] transition-colors">
-                Sign Up
-            </button>
-        </div>
-    </nav>
-);
+const Navbar = () => {
+    const navigate = useNavigate();
+    return (
+        <nav className="flex justify-between items-center py-5 px-6 md:px-12 max-w-7xl mx-auto w-full bg-white">
+            <div className="text-[#191e4a] text-[28px] font-black tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
+                HireTech
+            </div>
+            <div className="flex gap-6 items-center">
+                <button className="text-[#191e4a] font-semibold text-[14px] hover:text-[#655be9] transition-colors" onClick={() => navigate('/login')}>
+                    Sign In
+                </button>
+                <button className="text-[#191e4a] font-semibold text-[14px] hover:text-[#655be9] transition-colors" onClick={() => navigate('/register')}>
+                    Sign Up
+                </button>
+            </div>
+        </nav>
+    );
+};
 
 const HeroSection = () => (
     <div className="bg-[#191e4a] w-full py-20 px-6 flex flex-col items-center text-center relative overflow-hidden">
