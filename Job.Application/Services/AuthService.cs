@@ -31,7 +31,11 @@ public class AuthService : IAuthService
     {
         // Find user by username
         var users = await _userRepository.GetAllAsync();
-        var user = users.FirstOrDefault(u => u.Username == loginDto.Username);
+        // Normalize input: remove spaces and convert to lowercase
+        var normalizedInput = loginDto.Username.ToLower().Replace(" ", "");
+        
+        // Compare with stored usernames (also normalized to ensure match)
+        var user = users.FirstOrDefault(u => u.Username.ToLower().Replace(" ", "") == normalizedInput);
 
         if (user == null)
         {

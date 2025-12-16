@@ -56,7 +56,7 @@ export default function LoginPage() {
                 return;
             }
 
-            const data = await authService.login(formData.username, formData.password);
+            const data = await authService.login(formData.username.trim(), formData.password);
 
             const userId = parseInt(data.userId || data.UserId);
             const userToStore = { ...data, userId: userId };

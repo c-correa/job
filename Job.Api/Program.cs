@@ -177,6 +177,11 @@ try
             {
                 Console.WriteLine("✅ Database is up to date");
             }
+            
+            // Seed Data
+            Console.WriteLine("🌱 Seeding database...");
+            await DataSeeder.SeedAsync(dbContext);
+            Console.WriteLine("✅ Database seeded successfully!");
         }
         else
         {
@@ -257,6 +262,7 @@ app.MapGet("/", () => new
 });
 
 Console.WriteLine("✅ Application started successfully!");
-Console.WriteLine("🌐 Listening on: http://localhost:5000");
+Console.WriteLine("🌐 Listening on: http://localhost:3000");
+Console.WriteLine("swagger: http://localhost:5001");
 
 app.Run();

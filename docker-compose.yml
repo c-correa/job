@@ -80,6 +80,20 @@ services:
     volumes:
       - ./logs:/app/logs
 
+  # Frontend React App
+  frontend:
+    build:
+      context: ./Job.Frontend
+      dockerfile: Dockerfile
+    container_name: joblink-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - joblink-network
+    depends_on:
+      - api
+
 networks:
   joblink-network:
     driver: bridge

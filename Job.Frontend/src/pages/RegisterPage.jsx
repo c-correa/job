@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Briefcase, Code, Clock, Eye, EyeOff, ArrowLeft, Building2, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { authService, userService } from '../services/api';
+import { authService, userService, candidateService, companyService } from '../services/api';
 import { toast } from 'sonner';
 
 const RoleSwitcher = ({ role, setRole }) => (
@@ -106,7 +106,6 @@ export default function RegisterPage() {
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(authData));
 
-            let profileUrl = role === 'candidate' ? 'http://localhost:5000/api/candidates' : 'http://localhost:5000/api/companies';
             let profileBody = role === 'candidate' ? {
                 userId: numericId,
                 email: formData.email,
@@ -119,13 +118,11 @@ export default function RegisterPage() {
                 description: 'Company registered via web'
             };
 
-            const profileResponse = await fetch(profileUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(profileBody),
-            });
-
-            if (!profileResponse.ok) throw new Error(`Error creating ${role} profile`);
+            if (role === 'candidate') {
+                await candidateService.create(profileBody);
+            } else {
+                await companyService.create(profileBody);
+            }
 
             toast.success('Account Created!', { description: `Welcome ${formData.firstName}!` });
             setSuccess(true);

@@ -100,7 +100,7 @@ const ApplicantsModal = ({ job, onClose }) => {
                                                 )}
                                                 {app.resumeUrl && (
                                                     <a
-                                                        href={`http://localhost:5000${app.resumeUrl}`}
+                                                        href={`http://localhost:5001${app.resumeUrl}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-1 mt-2 text-[12px] font-bold text-[#655be9] hover:underline"
