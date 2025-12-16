@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { MoreHorizontal, Users, X, TrendingUp, Clock } from 'lucide-react';
+import { MoreHorizontal, Users, X, TrendingUp, Clock, Edit } from 'lucide-react';
 import Badge from '../ui/Badge';
 import { getDivisionFromJob } from '../../utils/jobUtils';
 
-const VacancyCard = ({ job, stats, onToggleStatus, onDelete, onViewApplicants }) => {
+const VacancyCard = ({ job, stats, onToggleStatus, onDelete, onViewApplicants, onEdit }) => {
     const [showMenu, setShowMenu] = useState(false);
 
     return (
@@ -39,6 +39,9 @@ const VacancyCard = ({ job, stats, onToggleStatus, onDelete, onViewApplicants })
                                 <button onClick={(e) => { e.stopPropagation(); setShowMenu(false); onToggleStatus && onToggleStatus(job.id, job.isActive); }} className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-[#191e4a] flex items-center gap-2">
                                     {job.isActive ? <X size={14} /> : <TrendingUp size={14} />}
                                     {job.isActive ? 'Close Vacancy' : 'Re-activate'}
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEdit && onEdit(job); }} className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-[#191e4a] flex items-center gap-2">
+                                    <Edit size={14} /> Edit Vacancy
                                 </button>
                                 <div className="h-px bg-gray-100 my-1" />
                                 <button onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete && onDelete(job.id); }} className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 flex items-center gap-2">

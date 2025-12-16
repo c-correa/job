@@ -9,6 +9,7 @@ import { authService, jobService, companyService } from '../services/api';
 import Badge from '../components/ui/Badge';
 import JobListItem from '../components/coder/JobListItem';
 import JobDetailView from '../components/coder/JobDetailView';
+import ChatBot from '../components/ChatBot';
 
 export default function CoderDashboard() {
     const navigate = useNavigate();
@@ -140,6 +141,10 @@ export default function CoderDashboard() {
                     </button>
                     <button onClick={() => navigate('/my-applications')} className="hover:text-[#655be9] transition-colors relative group">
                         My Applications
+                        <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-[#655be9] group-hover:w-full transition-all"></span>
+                    </button>
+                    <button onClick={() => navigate('/profile-settings')} className="hover:text-[#655be9] transition-colors relative group">
+                        Profile Settings
                         <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-[#655be9] group-hover:w-full transition-all"></span>
                     </button>
                     <button onClick={handleLogout} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors">
@@ -308,6 +313,8 @@ export default function CoderDashboard() {
                 </div>
             </main>
 
+            <ChatBot />
+
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
@@ -323,6 +330,6 @@ export default function CoderDashboard() {
                     background: #655be9;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }

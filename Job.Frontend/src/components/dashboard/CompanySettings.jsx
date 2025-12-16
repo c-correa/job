@@ -1,12 +1,85 @@
-import React from 'react';
-import { Building2, Mail, Hash, TrendingUp, Users, Award, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, Mail, Hash, TrendingUp, Users, Award, MapPin, Globe, Loader2, Save, X } from 'lucide-react';
+import { companyService } from '../../services/api';
+import { toast } from 'sonner';
 
 export default function CompanySettings({ company, user, stats, jobs }) {
-    // Derived Metrics
+    // Editing State
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [industries, setIndustries] = useState([]);
+    const [loadingIndustries, setLoadingIndustries] = useState(false);
+
+    // Form Data
+    const [formData, setFormData] = useState({
+        companyName: '',
+        industry: 0,
+        description: '',
+        websiteUrl: '',
+        location: ''
+    });
+
+    // Initialize form when company changes
+    useEffect(() => {
+        if (company) {
+            setFormData({
+                companyName: company.companyName || '',
+                industry: company.industry || 0,
+                description: company.description || '',
+                websiteUrl: company.websiteUrl || '',
+                location: company.location || ''
+            });
+        }
+    }, [company]);
+
+    // Load industries on edit
+    useEffect(() => {
+        if (isEditing && industries.length === 0) {
+            loadIndustries();
+        }
+    }, [isEditing]);
+
+    const loadIndustries = async () => {
+        try {
+            setLoadingIndustries(true);
+            const data = await companyService.getIndustries();
+            setIndustries(data);
+        } catch (error) {
+            console.error("Failed to load industries", error);
+            toast.error("Failed to load industries");
+        } finally {
+            setLoadingIndustries(false);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            const updateData = {
+                ...company, // Keep id, userId, etc.
+                ...formData,
+                industry: parseInt(formData.industry)
+            };
+
+            await companyService.update(company.id, updateData);
+            toast.success("Company profile updated successfully!");
+            setIsEditing(false);
+            // In a real app, we might want to refresh the parent state here, 
+            // but for now the user can refresh or we assume optimistic updates if we improved the flow.
+            // A page reload is simple for now or a callback from parent.
+            window.location.reload();
+        } catch (error) {
+            console.error("Error updating company", error);
+            toast.error("Failed to update profile");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Derived Metrics (Existing logic)
     const totalApplicants = jobs.reduce((acc, job) => acc + (job.stats?.applicants || 0), 0);
     const avgApplicantsPerJob = jobs.length ? (totalApplicants / jobs.length).toFixed(1) : 0;
 
-    // Calculate Division breakdown
     const divisionStats = jobs.reduce((acc, job) => {
         const div = job.division || 'General';
         acc[div] = (acc[div] || 0) + 1;
@@ -14,7 +87,6 @@ export default function CompanySettings({ company, user, stats, jobs }) {
     }, {});
     const topDivision = Object.entries(divisionStats).sort((a, b) => b[1] - a[1])[0] || ['None', 0];
 
-    // Funnel Calculations
     const interviewRate = totalApplicants ? ((stats.interviews / totalApplicants) * 100).toFixed(1) : 0;
     const hireRate = stats.interviews ? ((stats.hired / stats.interviews) * 100).toFixed(1) : 0;
 
@@ -37,48 +109,141 @@ export default function CompanySettings({ company, user, stats, jobs }) {
                             </div>
                         </div>
 
-                        <h3 className="text-[20px] font-bold text-[#191e4a] mb-1">{company?.companyName || "Your Company"}</h3>
-                        <p className="text-gray-400 text-[13px] mb-6">Recruitment Account</p>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 text-[13px] text-gray-600">
-                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                                    <Hash size={14} />
+                        {isEditing ? (
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="text-[12px] font-bold text-gray-700">Company Name</label>
+                                    <input
+                                        type="text"
+                                        value={formData.companyName}
+                                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                                        className="w-full border rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[#655be9]"
+                                    />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Company ID</p>
-                                    <p className="font-mono">{company?.id}</p>
+                                <div>
+                                    <label className="text-[12px] font-bold text-gray-700">Industry</label>
+                                    <select
+                                        value={formData.industry}
+                                        onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                                        className="w-full border rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[#655be9]"
+                                        disabled={loadingIndustries}
+                                    >
+                                        <option value={0}>Select Industry</option>
+                                        {industries.map(ind => (
+                                            <option key={ind.id} value={ind.id}>{ind.displayName}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[12px] font-bold text-gray-700">Location</label>
+                                    <input
+                                        type="text"
+                                        value={formData.location}
+                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                        className="w-full border rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[#655be9]"
+                                        placeholder="City, Country"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[12px] font-bold text-gray-700">Website</label>
+                                    <input
+                                        type="text"
+                                        value={formData.websiteUrl}
+                                        onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                                        className="w-full border rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[#655be9]"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[12px] font-bold text-gray-700">Description</label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="w-full border rounded-[8px] px-3 py-2 text-[13px] outline-none focus:border-[#655be9] resize-none h-20"
+                                        placeholder="About your company..."
+                                    />
                                 </div>
                             </div>
+                        ) : (
+                            <>
+                                <h3 className="text-[20px] font-bold text-[#191e4a] mb-1">{company?.companyName || "Your Company"}</h3>
+                                <p className="text-gray-400 text-[13px] mb-6">
+                                    {company?.industry ? (industries.find(i => i.id === company.industry)?.displayName || "Industry Set") : "Recruitment Account"}
+                                </p>
 
-                            <div className="flex items-center gap-3 text-[13px] text-gray-600">
-                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                                    <Mail size={14} />
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 text-[13px] text-gray-600">
+                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                            <Hash size={14} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Company ID</p>
+                                            <p className="font-mono">{company?.id}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-[13px] text-gray-600">
+                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                            <Mail size={14} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Contact Email</p>
+                                            <p>{user?.email || user?.username || "Not set"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-[13px] text-gray-600">
+                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                            <MapPin size={14} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Location</p>
+                                            <p>{company?.location || "Not set"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-[13px] text-gray-600">
+                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
+                                            <Globe size={14} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Website</p>
+                                            <p className="truncate block w-[180px]">{company?.websiteUrl || "Not set"}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Contact Email</p>
-                                    <p>{user?.email || user?.username || "Not set"}</p>
-                                </div>
+                            </>
+                        )}
+
+                        {isEditing ? (
+                            <div className="flex gap-2 mt-6">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="flex-1 py-2.5 rounded-[8px] bg-[#655be9] text-white text-[13px] font-bold hover:bg-[#544bc2] transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                    Save
+                                </button>
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="px-4 py-2.5 rounded-[8px] bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
                             </div>
-
-                            <div className="flex items-center gap-3 text-[13px] text-gray-600">
-                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 shrink-0">
-                                    <MapPin size={14} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Jobs Location</p>
-                                    <p>Varied ({jobs.length} locations)</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button className="w-full mt-6 py-2.5 rounded-[8px] bg-gray-50 text-[#191e4a] text-[13px] font-bold hover:bg-gray-100 transition-colors">
-                            Edit Profile
-                        </button>
+                        ) : (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="w-full mt-6 py-2.5 rounded-[8px] bg-gray-50 text-[#191e4a] text-[13px] font-bold hover:bg-gray-100 transition-colors"
+                            >
+                                Edit Profile
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Right Column: Metrics */}
+                {/* Right Column: Metrics (Unchanged) */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Performance Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -152,21 +152,25 @@ public class CompaniesController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var exists = await _repository.ExistAsync(id);
-            if (!exists)
+            var company = await _repository.GetByIdAsync(id);
+            if (company == null)
             {
                 _logger.LogWarning("Company with ID {Id} not found for update", id);
                 return NotFound(new { message = $"Company with ID {id} not found" });
             }
 
-            var company = _mapper.Map<CompanyProfile>(dto);
+            // Update existing entity properties
+            _mapper.Map(dto, company);
             company.UpdatedAt = DateTime.UtcNow;
             
-            var updated = await _repository.UpdateAsync(company);
+            // Assuming generic repository handles tracking correctly or is just a wrapper for DbContext updates
+            // Since we fetched it with GetByIdAsync (tracked), modifying it and saving is enough.
+            // Explicit UpdateAsync might cause issues if it tries to re-attach.
+            _logger.LogInformation("Updating company properties directly regarding tracking...");
             await _repository.SaveAsync();
             
-            var updatedDto = _mapper.Map<CompanyProfileDto>(updated);
-            _logger.LogInformation("Updated company {Id}: {Name}", updated.Id, updated.CompanyName);
+            var updatedDto = _mapper.Map<CompanyProfileDto>(company);
+            _logger.LogInformation("Updated company {Id}: {Name}", company.Id, company.CompanyName);
             
             return Ok(updatedDto);
         }

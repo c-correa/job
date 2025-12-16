@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CoderDashboard from './pages/CoderDashboard';
 import ApplicationTracking from './pages/ApplicationTracking';
+import ProfileSettings from './pages/ProfileSettings';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
         <Route path="/dashboard" element={<CompanyDashboard />} />
         <Route path="/dashboard-coder" element={<CoderDashboard />} />
         <Route path="/my-applications" element={<ApplicationTracking />} />
+        <Route path="/profile-settings" element={<ProfileSettings />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

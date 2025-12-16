@@ -1,54 +1,25 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowLeft, Eye, EyeOff, User, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { authService, companyService, candidateService } from '../services/api';
-
-// --- Componentes UI Reutilizables ---
-
-const RoleSwitcher = ({ role, setRole }) => (
-    <div className="bg-[#e5e7eb] p-1 rounded-md flex w-full h-[45px] relative mb-6">
-        {/* Fondo animado (Slider) */}
-        <div
-            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-[6px] shadow-sm transition-all duration-300 ease-out ${role === 'company' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
-                }`}
-        />
-
-        <button
-            type="button"
-            onClick={() => setRole('coder')}
-            className={`flex-1 z-10 text-[14px] font-bold text-center transition-colors duration-300 ${role === 'coder' ? 'text-[#655be9]' : 'text-gray-500 hover:text-gray-700'
-                }`}
-        >
-            I'm a coder
-        </button>
-        <button
-            type="button"
-            onClick={() => setRole('company')}
-            className={`flex-1 z-10 text-[14px] font-bold text-center transition-colors duration-300 ${role === 'company' ? 'text-[#655be9]' : 'text-gray-500 hover:text-gray-700'
-                }`}
-        >
-            I'm a Company
-        </button>
-    </div>
-);
 
 const InputField = ({ label, type, placeholder, icon: Icon, value, onChange, isPassword = false }) => {
     const [show, setShow] = useState(false);
     const inputType = isPassword ? (show ? 'text' : 'password') : type;
 
     return (
-        <div className="mb-4">
-            <label className="block text-[#655be9] font-bold text-[14px] mb-1.5 ml-1">
+        <div className="mb-5">
+            <label className="block text-[#191e4a] font-bold text-[14px] mb-2 ml-1">
                 {label}
             </label>
             <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#655be9] transition-colors">
-                    <Icon size={18} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#655be9] transition-colors">
+                    <Icon size={20} />
                 </div>
                 <input
                     type={inputType}
-                    className="w-full bg-white border border-gray-200 rounded-[8px] h-[45px] pl-10 pr-10 text-[14px] text-[#191e4a] outline-none focus:border-[#655be9] focus:ring-2 focus:ring-[#655be9]/10 transition-all placeholder:text-gray-300"
+                    className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-[#655be9] rounded-[16px] h-[52px] pl-12 pr-12 text-[15px] text-[#191e4a] outline-none focus:ring-4 focus:ring-[#655be9]/10 transition-all placeholder:text-gray-400 font-medium"
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
@@ -57,9 +28,9 @@ const InputField = ({ label, type, placeholder, icon: Icon, value, onChange, isP
                     <button
                         type="button"
                         onClick={() => setShow(!show)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#655be9] transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#655be9] transition-colors"
                     >
-                        {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {show ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                 )}
             </div>
@@ -67,51 +38,41 @@ const InputField = ({ label, type, placeholder, icon: Icon, value, onChange, isP
     );
 };
 
-// --- Componente Principal ---
-
 export default function LoginPage() {
     const navigate = useNavigate();
-    const [role, setRole] = useState('coder');
     const [loading, setLoading] = useState(false);
-
-    const [formData, setFormData] = useState({
-        username: '', // Cambiado de email a username
-        password: ''
-    });
+    const [formData, setFormData] = useState({ username: '', password: '' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
+            // Hardcoded Admin Access
+            if (formData.username === 'admin@hiretech.com' && formData.password === '123456789') {
+                toast.success('Admin access granted', { duration: 2000 });
+                localStorage.setItem('user', JSON.stringify({ username: 'Admin', email: 'admin@hiretech.com', role: 'admin' }));
+                setTimeout(() => navigate('/admin'), 1000);
+                return;
+            }
+
             const data = await authService.login(formData.username, formData.password);
 
-            // CRITICAL: Save userId to localStorage for persistence
             const userId = parseInt(data.userId || data.UserId);
-            const userToStore = {
-                ...data,
-                userId: userId // Ensure it's stored as number
-            };
-
-            console.log("Login successful, storing user:", userToStore);
+            const userToStore = { ...data, userId: userId };
             localStorage.setItem('user', JSON.stringify(userToStore));
 
-            // Detect actual user role from database
             const [candidateProfile, companyProfile] = await Promise.all([
                 candidateService.getMyCandidate(userId).catch(() => null),
                 companyService.getMyCompany(userId).catch(() => null)
             ]);
 
-            let targetDashboard = '/dashboard'; // default fallback
+            let targetDashboard = '/dashboard';
+            if (candidateProfile) targetDashboard = '/dashboard-coder';
+            else if (companyProfile) targetDashboard = '/dashboard';
 
-            if (candidateProfile) {
-                targetDashboard = '/dashboard-coder';
-            } else if (companyProfile) {
-                targetDashboard = '/dashboard';
-            }
-
-            toast.success('¡Bienvenido de nuevo!', {
-                description: `Has iniciado sesión correctamente como ${data.username || formData.username}`,
+            toast.success('Welcome back!', {
+                description: `Signed in as ${data.username}`,
                 duration: 3000,
             });
 
@@ -119,8 +80,8 @@ export default function LoginPage() {
 
         } catch (error) {
             console.error(error);
-            toast.error('Error de inicio de sesión', {
-                description: 'Usuario o contraseña incorrectos. Verifica tus credenciales.',
+            toast.error('Login Failed', {
+                description: 'Incorrect username or password.',
             });
         } finally {
             setLoading(false);
@@ -128,83 +89,96 @@ export default function LoginPage() {
     };
 
     return (
-        // Fondo azulado claro como en la imagen
-        <div className="min-h-screen bg-[#f2f6ff] flex items-center justify-center p-4 font-['Inter',sans-serif]">
+        <div className="min-h-screen bg-white flex font-['Inter',sans-serif]">
 
-            <div className="bg-white w-full max-w-[420px] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-8 md:p-10 transform transition-all hover:scale-[1.01]">
+            {/* Left Side - Image/Brand */}
+            <div className="hidden lg:flex lg:w-1/2 bg-[#191e4a] relative overflow-hidden items-center justify-center p-12">
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#655be9] rounded-full blur-[120px] opacity-20 translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#55c79e] rounded-full blur-[100px] opacity-10 -translate-x-1/3 translate-y-1/3" />
 
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-[#191e4a] text-[36px] font-black tracking-tighter mb-1">
-                        HireTech
+                <div className="relative z-10 text-white max-w-lg">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/20 mb-6 backdrop-blur-md">
+                        <Sparkles size={14} className="text-[#55c79e]" />
+                        <span className="text-[12px] font-bold uppercase tracking-wider">Join 10,000+ Developers</span>
+                    </div>
+                    <h1 className="text-[48px] font-black leading-tight mb-6">
+                        Welcome to the Future of Tech Hiring.
                     </h1>
-                    <p className="text-[#655be9] font-bold text-[18px]">
-                        Log in
-                    </p>
+                    <ul className="space-y-4 text-gray-300 font-medium text-[16px]">
+                        {['Access exclusive job opportunities', 'Connect directly with hiring managers', 'Showcase your skills with verified assessments'].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3">
+                                <CheckCircle2 size={20} className="text-[#55c79e]" />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
+            </div>
 
-                {/* Formulario */}
-                <form onSubmit={handleSubmit}>
+            {/* Right Side - Form */}
+            <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-24 bg-white relative">
+                <div className="w-full max-w-[440px]">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="absolute top-8 left-8 lg:top-12 lg:left-12 flex items-center gap-2 text-gray-500 hover:text-[#191e4a] font-bold text-[14px] transition-colors"
+                    >
+                        <ArrowLeft size={18} /> Back
+                    </button>
 
-                    <RoleSwitcher role={role} setRole={setRole} />
-
-                    <InputField
-                        label="Username"
-                        type="text"
-                        placeholder="juanperez"
-                        icon={User}
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    />
-
-                    <InputField
-                        label="Password"
-                        type="password"
-                        placeholder="••••••••"
-                        icon={Lock}
-                        isPassword={true}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-
-                    <div className="flex justify-end mb-6">
-                        <button type="button" className="text-[12px] text-gray-400 hover:text-[#655be9] font-medium transition-colors">
-                            Forgot password?
-                        </button>
+                    <div className="mb-10 mt-12 lg:mt-0">
+                        <div className="w-12 h-12 bg-[#655be9]/10 rounded-[14px] flex items-center justify-center text-[#655be9] mb-6">
+                            <User size={24} />
+                        </div>
+                        <h2 className="text-[#191e4a] text-[32px] font-black tracking-tight mb-2">Welcome Back</h2>
+                        <p className="text-gray-500 text-[16px]">Please enter your details to sign in.</p>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-[#655be9] hover:bg-[#544bc2] text-white h-[48px] rounded-[8px] font-bold text-[16px] shadow-lg shadow-[#655be9]/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70"
-                    >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Log in'}
-                    </button>
-                </form>
+                    <form onSubmit={handleSubmit} className="space-y-2">
+                        <InputField
+                            label="Username"
+                            type="text"
+                            placeholder="Enter your username"
+                            icon={User}
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        />
 
-                {/* Footer Links */}
-                <div className="mt-8 text-center space-y-4">
-                    <p className="text-[13px] text-[#191e4a] font-medium">
+                        <InputField
+                            label="Password"
+                            type="password"
+                            placeholder="••••••••"
+                            icon={Lock}
+                            isPassword={true}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+
+                        <div className="flex justify-end pt-2 pb-6">
+                            <button type="button" className="text-[13px] text-[#655be9] font-bold hover:underline">
+                                Forgot password?
+                            </button>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#191e4a] hover:bg-[#655be9] text-white h-[52px] rounded-[16px] font-bold text-[16px] shadow-xl shadow-[#191e4a]/10 hover:shadow-[#655be9]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In'}
+                        </button>
+                    </form>
+
+                    <p className="mt-8 text-center text-[14px] text-gray-500 font-medium">
                         Don't have an account?{' '}
                         <button
                             type="button"
                             className="text-[#655be9] font-bold hover:underline"
                             onClick={() => navigate('/register')}
                         >
-                            Sign up!
+                            Create free account
                         </button>
                     </p>
-
-                    <button
-                        type="button"
-                        className="flex items-center justify-center gap-2 text-gray-400 text-[12px] font-medium hover:text-[#191e4a] transition-colors mx-auto group"
-                        onClick={() => navigate('/')}
-                    >
-                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                        Back to home
-                    </button>
                 </div>
-
             </div>
         </div>
     );

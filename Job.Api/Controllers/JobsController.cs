@@ -160,21 +160,22 @@ public class JobsController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var exists = await _repository.ExistAsync(id);
-            if (!exists)
+            var job = await _repository.GetByIdAsync(id);
+            if (job == null)
             {
                 _logger.LogWarning("Job with ID {Id} not found for update", id);
                 return NotFound(new { message = $"Job with ID {id} not found" });
             }
 
-            var job = _mapper.Map<Domain.Entities.Job>(dto);
+            // Update existing entity properties
+            _mapper.Map(dto, job);
             job.UpdatedAt = DateTime.UtcNow;
             
-            var updated = await _repository.UpdateAsync(job);
+            // Rely on change tracking for update
             await _repository.SaveAsync();
             
-            var updatedDto = _mapper.Map<JobDto>(updated);
-            _logger.LogInformation("Updated job {Id}: {Title}", updated.Id, updated.Title);
+            var updatedDto = _mapper.Map<JobDto>(job);
+            _logger.LogInformation("Updated job {Id}: {Title}", job.Id, job.Title);
             
             return Ok(updatedDto);
         }
@@ -244,10 +245,10 @@ public class JobsController : ControllerBase
             job.IsActive = isActive;
             job.UpdatedAt = DateTime.UtcNow;
             
-            var updated = await _repository.UpdateAsync(job);
+            // Rely on change tracking
             await _repository.SaveAsync();
             
-            var updatedDto = _mapper.Map<JobDto>(updated);
+            var updatedDto = _mapper.Map<JobDto>(job);
             _logger.LogInformation("Updated job {Id} status to {IsActive}", id, isActive);
             
             return Ok(updatedDto);

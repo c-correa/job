@@ -24,6 +24,7 @@ import CreateJobModal from '../components/dashboard/CreateJobModal';
 import CreateDivisionModal from '../components/dashboard/CreateDivisionModal';
 import ApplicantsModal from '../components/dashboard/ApplicantsModal';
 import CompanySettings from '../components/dashboard/CompanySettings';
+import CandidateSearch from '../components/dashboard/CandidateSearch';
 
 export default function CompanyDashboard() {
     const navigate = useNavigate();
@@ -39,6 +40,9 @@ export default function CompanyDashboard() {
         interviews: 0,
         hired: 0
     });
+
+    // Edit State
+    const [jobToEdit, setJobToEdit] = useState(null);
 
     // UI State
     const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'settings'
@@ -200,13 +204,21 @@ export default function CompanyDashboard() {
                 requiredSkills: jobData.requiredSkills
             };
 
-            await jobService.create(payload);
+            if (jobToEdit) {
+                payload.id = jobToEdit.id; // Ensure ID is part of payload although normally URL param
+                await jobService.update(jobToEdit.id, payload);
+                showToast("Job vacancy updated successfully!", "success");
+            } else {
+                await jobService.create(payload);
+                showToast("Job vacancy created successfully!", "success");
+            }
+
             setShowCreateJob(false);
-            showToast("Job vacancy created successfully!", "success");
+            setJobToEdit(null); // Reset
             await loadDashboard();
         } catch (error) {
-            console.error("Error creating job", error);
-            let msg = "Failed to create job";
+            console.error("Error saving job", error);
+            let msg = "Failed to save job";
             if (error.response?.data) {
                 if (typeof error.response.data === 'string') msg = error.response.data;
                 else if (error.response.data.title) msg = error.response.data.title;
@@ -216,6 +228,11 @@ export default function CompanyDashboard() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEditJob = (job) => {
+        setJobToEdit(job);
+        setShowCreateJob(true);
     };
 
     const handleToggleJobStatus = async (jobId, currentStatus) => {
@@ -326,6 +343,17 @@ export default function CompanyDashboard() {
                         All Vacancies
                     </button>
 
+                    <button
+                        onClick={() => setCurrentView('search')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-[8px] text-[14px] font-bold mb-6 transition-all shadow-sm
+              ${currentView === 'search'
+                                ? 'bg-[#55c79e] text-white shadow-[0_4px_14px_rgba(85,199,158,0.4)]'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        <Search size={18} />
+                        Find Talent
+                    </button>
+
                     <div className="mb-4">
                         <div className="flex justify-between items-center px-4 mb-3">
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Divisions</span>
@@ -379,6 +407,8 @@ export default function CompanyDashboard() {
 
                 {currentView === 'settings' ? (
                     <CompanySettings company={company} user={user} stats={stats} jobs={jobs} />
+                ) : currentView === 'search' ? (
+                    <CandidateSearch />
                 ) : (
                     <>
                         <div className="flex justify-between items-end mb-8 animate-in fade-in duration-500">
@@ -388,7 +418,7 @@ export default function CompanyDashboard() {
                                     {activeTab === 'all' ? "Showing all vacancies" : `Filtering by Division: ${activeTab}`}
                                 </p>
                             </div>
-                            <button onClick={() => setShowCreateJob(true)} className="bg-[#191e4a] hover:bg-[#2c3470] text-white px-6 py-3 rounded-[10px] font-bold text-[14px] shadow-lg shadow-[#191e4a]/20 flex items-center gap-2 transition-all">
+                            <button onClick={() => { setShowCreateJob(true); setJobToEdit(null); }} className="bg-[#191e4a] hover:bg-[#2c3470] text-white px-6 py-3 rounded-[10px] font-bold text-[14px] shadow-lg shadow-[#191e4a]/20 flex items-center gap-2 transition-all">
                                 <Plus size={18} /> Create New Vacancy
                             </button>
                         </div>
@@ -413,16 +443,17 @@ export default function CompanyDashboard() {
                                     key={job.id}
                                     job={job}
                                     stats={job.stats}
-                                    onToggleStatus={handleToggleJobStatus}
-                                    onDelete={handleDeleteJob}
                                     onViewApplicants={handleViewApplicants}
+                                    onDelete={handleDeleteJob}
+                                    onToggleStatus={handleToggleJobStatus}
+                                    onEdit={handleEditJob}
                                 />
                             )) : (
                                 <div className="col-span-full hidden" />
                             )}
 
                             {/* Add Button Card */}
-                            <div onClick={() => setShowCreateJob(true)} className="border-2 border-dashed border-gray-300 rounded-[12px] flex flex-col items-center justify-center text-gray-400 min-h-[200px] hover:border-[#55c79e] hover:text-[#55c79e] hover:bg-[#55c79e]/5 cursor-pointer transition-all">
+                            <div onClick={() => { setShowCreateJob(true); setJobToEdit(null); }} className="border-2 border-dashed border-gray-300 rounded-[12px] flex flex-col items-center justify-center text-gray-400 min-h-[200px] hover:border-[#55c79e] hover:text-[#55c79e] hover:bg-[#55c79e]/5 cursor-pointer transition-all">
                                 <div className="bg-white p-3 rounded-full mb-3 shadow-sm">
                                     <Plus size={24} />
                                 </div>

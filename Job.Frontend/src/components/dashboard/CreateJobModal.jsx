@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const CreateJobModal = ({ onClose, onSubmit, loading, divisions, initialDivision }) => {
+const CreateJobModal = ({ onClose, onSubmit, loading, divisions, initialDivision, jobToEdit }) => {
+    const isEditMode = !!jobToEdit;
+
+    // Helper to strip division tag
+    const getCleanDescription = (desc) => {
+        if (!desc) return '';
+        // Remove [Division: X] and potential newlines
+        return desc.replace(/\[Division:.*?\](\n\n)?/, '').trim();
+    };
+
     const [formData, setFormData] = useState({
-        title: '',
-        division: (initialDivision && initialDivision !== 'all') ? initialDivision : (divisions[0] || 'General'),
-        description: '',
-        location: '',
-        salary: '',
-        jobType: 1, // FullTime default
-        requiredSkills: ''
+        title: jobToEdit?.title || '',
+        division: jobToEdit?.division || ((initialDivision && initialDivision !== 'all') ? initialDivision : (divisions[0] || 'General')),
+        description: getCleanDescription(jobToEdit?.description),
+        location: jobToEdit?.location || '',
+        salary: jobToEdit?.salary || '',
+        jobType: jobToEdit?.jobType || 1, // FullTime default
+        requiredSkills: jobToEdit?.requiredSkills || ''
     });
 
     const handleSubmit = (e) => {
@@ -21,7 +30,7 @@ const CreateJobModal = ({ onClose, onSubmit, loading, divisions, initialDivision
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-[16px] w-[600px] max-w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#191e4a] text-white">
-                    <h3 className="text-[18px] font-bold">Create New Vacancy</h3>
+                    <h3 className="text-[18px] font-bold">{isEditMode ? 'Edit Vacancy' : 'Create New Vacancy'}</h3>
                     <button onClick={onClose} className="hover:bg-white/10 p-1 rounded-full transition-colors"><X size={20} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -73,7 +82,7 @@ const CreateJobModal = ({ onClose, onSubmit, loading, divisions, initialDivision
                     <div className="pt-4 flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-5 py-2 text-[14px] font-bold text-gray-400 hover:text-gray-600">Cancel</button>
                         <button type="submit" disabled={loading} className="px-6 py-2 bg-[#55c79e] hover:bg-[#46b08a] text-white rounded-[8px] text-[14px] font-bold shadow-lg shadow-[#55c79e]/20 transition-all">
-                            {loading ? 'Creating...' : 'Post Vacancy'}
+                            {loading ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Post Vacancy')}
                         </button>
                     </div>
                 </form>

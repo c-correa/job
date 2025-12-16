@@ -5,6 +5,8 @@ using Domain.Entities;
 using Domain.InterfaceRepository;
 using Applications.DTOs;
 using Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using Job.Infra.Persistence;
 
 namespace Job.Controllers;
 
@@ -19,17 +21,20 @@ public class CandidatesController : ControllerBase
     private readonly IGenericRepository<CandidateSkill> _skillRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<CandidatesController> _logger;
+    private readonly AppDBContext _context; // Add DbContext for Include queries
 
     public CandidatesController(
         IGenericRepository<CandidateProfile> repository,
         IGenericRepository<CandidateSkill> skillRepository,
         IMapper mapper,
-        ILogger<CandidatesController> logger)
+        ILogger<CandidatesController> logger,
+        AppDBContext context) // Inject DbContext
     {
         _repository = repository;
         _skillRepository = skillRepository;
         _mapper = mapper;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
@@ -46,10 +51,23 @@ public class CandidatesController : ControllerBase
     {
         try
         {
-            var candidates = await _repository.GetAllAsync();
+            // Use DbContext to include CandidateSkills navigation property
+            // AsNoTracking prevents EF from tracking these entities, avoiding conflicts with UPDATE
+            var candidates = await _context.CandidateProfiles
+                .Include(c => c.CandidateSkills)
+                .AsNoTracking() // IMPORTANT: Prevents tracking conflicts
+                .ToListAsync();
             
-            // Note: This is a simplified version. For production, use EF Include for better performance
+            // Map to DTOs - Now skills will be included
             var dtos = _mapper.Map<IEnumerable<CandidateProfileDto>>(candidates);
+            
+            // Log to verify skills are being loaded
+            _logger.LogInformation("Retrieved {Count} candidates with skills", candidates.Count);
+            foreach (var candidate in candidates.Take(3)) // Log first 3 for debugging
+            {
+                _logger.LogInformation("Candidate {Id} has {SkillCount} skills in DB", 
+                    candidate.Id, candidate.CandidateSkills?.Count ?? 0);
+            }
             
             if (skill.HasValue || minProficiency.HasValue)
             {
@@ -59,7 +77,7 @@ public class CandidatesController : ControllerBase
                 ));
             }
             
-            _logger.LogInformation("Retrieved {Count} candidates", dtos.Count());
+            _logger.LogInformation("Returning {Count} candidates after filtering", dtos.Count());
             return Ok(dtos);
         }
         catch (Exception ex)
@@ -81,7 +99,11 @@ public class CandidatesController : ControllerBase
     {
         try
         {
-            var candidate = await _repository.GetByIdAsync(id);
+            // Use DbContext to include skills
+            var candidate = await _context.CandidateProfiles
+                .Include(c => c.CandidateSkills)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == id);
             
             if (candidate == null)
             {
@@ -90,6 +112,7 @@ public class CandidatesController : ControllerBase
             }
             
             var dto = _mapper.Map<CandidateProfileDto>(candidate);
+            _logger.LogInformation("Retrieved candidate {Id} with {SkillCount} skills", id, dto.CandidateSkills?.Count ?? 0);
             return Ok(dto);
         }
         catch (Exception ex)
@@ -161,6 +184,8 @@ public class CandidatesController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("🔧 UPDATE Request - ID: {Id}", id);
+            
             if (id != dto.Id)
             {
                 return BadRequest(new { message = "ID mismatch" });
@@ -171,28 +196,38 @@ public class CandidatesController : ControllerBase
                 return BadRequest(ModelState);
             }
 
-            var exists = await _repository.ExistAsync(id);
-            if (!exists)
+            // 1. Fetch existing entity WITH usage of the context (Keep tracking ON)
+            var existingCandidate = await _context.CandidateProfiles
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (existingCandidate == null)
             {
                 _logger.LogWarning("Candidate with ID {Id} not found for update", id);
                 return NotFound(new { message = $"Candidate with ID {id} not found" });
             }
 
-            var candidate = _mapper.Map<CandidateProfile>(dto);
-            candidate.UpdatedAt = DateTime.UtcNow;
+            // 2. Update ONLY the fields that should be editable via this endpoint
+            // We do NOT map skills here to avoid wiping them out if null in DTO
+            existingCandidate.Email = dto.Email;
+            existingCandidate.Summary = dto.Summary;
+            existingCandidate.YearsOfExperience = dto.YearsOfExperience;
+            existingCandidate.ResumeUrl = dto.ResumeUrl;
+            existingCandidate.UserId = dto.UserId;
+            existingCandidate.UpdatedAt = DateTime.UtcNow;
+
+            // 3. Save changes
+            await _context.SaveChangesAsync();
             
-            var updated = await _repository.UpdateAsync(candidate);
-            await _repository.SaveAsync();
-            
-            var updatedDto = _mapper.Map<CandidateProfileDto>(updated);
-            _logger.LogInformation("Updated candidate {Id}: {Email}", updated.Id, updated.Email);
+            // 4. Map back to DTO
+            var updatedDto = _mapper.Map<CandidateProfileDto>(existingCandidate);
+            _logger.LogInformation("Updated candidate {Id}: {Email}", existingCandidate.Id, existingCandidate.Email);
             
             return Ok(updatedDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating candidate {Id}", id);
-            return StatusCode(500, "An error occurred while updating the candidate");
+            return StatusCode(500, "An error occurred while updating the candidate: " + ex.Message);
         }
     }
 
@@ -273,6 +308,62 @@ public class CandidatesController : ControllerBase
         {
             _logger.LogError(ex, "Error adding skill to candidate {Id}", id);
             return StatusCode(500, "An error occurred while adding the skill");
+        }
+    }
+
+    /// <summary>
+    /// Remove a skill from a candidate
+    /// </summary>
+    /// <param name="id">Candidate ID</param>
+    /// <param name="skillId">CandidateSkill ID (Database PK)</param>
+    /// <returns>No content</returns>
+    [HttpDelete("{id}/skills/{skillId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSkill(int id, int skillId)
+    {
+        try
+        {
+            _logger.LogInformation("🗑️ DELETE Skill Request - CandidateId: {Id}, SkillId: {SkillId}", id, skillId);
+
+            // Verify candidate exists
+            var candidateExists = await _repository.ExistAsync(id);
+            if (!candidateExists)
+            {
+                _logger.LogWarning("❌ Candidate {Id} not found", id);
+                return NotFound(new { message = $"Candidate with ID {id} not found" });
+            }
+
+            // Verify skill exists via Context directly to be sure
+            var skill = await _context.CandidateSkills.FindAsync(skillId);
+             
+            if (skill == null)
+            {
+                 _logger.LogWarning("❌ Skill {SkillId} not found in DB", skillId);
+                 return NotFound(new { message = $"Skill with ID {skillId} not found" });
+            }
+
+            _logger.LogInformation("✅ Found skill {SkillId}, belonging to candidate {CandidateId}", skillId, skill.CandidateProfileId);
+
+            if (skill.CandidateProfileId != id)
+            {
+                _logger.LogWarning("❌ Skill {SkillId} belongs to candidate {OwnerId}, not {ReqId}", skillId, skill.CandidateProfileId, id);
+                return BadRequest(new { message = "Skill does not belong to this candidate" });
+            }
+
+            // Delete directly via context
+            _context.CandidateSkills.Remove(skill);
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("✅ Successfully deleted skill {SkillId}", skillId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting skill from candidate {Id}", id);
+            return StatusCode(500, "An error occurred while deleting the skill");
         }
     }
 

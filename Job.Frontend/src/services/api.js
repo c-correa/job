@@ -46,8 +46,8 @@ export const authService = {
 };
 
 export const companyService = {
-    getAll: async () => {
-        const response = await api.get('/companies');
+    getAll: async (filters = {}) => {
+        const response = await api.get('/companies', { params: filters });
         return response.data;
     },
     getById: async (id) => {
@@ -64,12 +64,24 @@ export const companyService = {
         });
         console.log("✅ Found company:", found);
         return found;
+    },
+    create: async (companyData) => {
+        const response = await api.post('/companies', companyData);
+        return response.data;
+    },
+    update: async (id, companyData) => {
+        const response = await api.put(`/companies/${id}`, companyData);
+        return response.data;
+    },
+    getIndustries: async () => {
+        const response = await api.get('/companies/industries');
+        return response.data;
     }
 };
 
 export const candidateService = {
-    getAll: async () => {
-        const response = await api.get('/candidates');
+    getAll: async (filters = {}) => {
+        const response = await api.get('/candidates', { params: filters });
         return response.data;
     },
     getById: async (id) => {
@@ -77,25 +89,50 @@ export const candidateService = {
         return response.data;
     },
     getMyCandidate: async (userId) => {
+        // Fetch all candidates and filter by userId
+        // This ensures we get the full candidate object with skills
         const allCandidates = await candidateService.getAll();
-        console.log("Looking for candidate with userId:", userId);
-        console.log("All candidates:", allCandidates);
         const found = allCandidates.find(c => {
-            console.log("Checking candidate:", c, "c.userId:", c.userId, "c.UserId:", c.UserId);
             return c.userId == userId || c.UserId == userId;
         });
-        console.log("Found candidate:", found);
+
+        if (found) {
+            console.log("✅ Found candidate with skills:", found);
+            console.log("Skills count:", found.candidateSkills?.length || 0);
+        } else {
+            console.log("❌ No candidate found for userId:", userId);
+        }
+
         return found;
+    },
+    update: async (id, profileData) => {
+        const response = await api.put(`/candidates/${id}`, profileData);
+        return response.data;
+    },
+    addSkill: async (candidateId, skillData) => {
+        const response = await api.post(`/candidates/${candidateId}/skills`, skillData);
+        return response.data;
+    },
+    deleteSkill: async (candidateId, skillId) => {
+        const response = await api.delete(`/candidates/${candidateId}/skills/${skillId}`);
+        return response.data;
+    },
+    getAvailableSkills: async () => {
+        const response = await api.get('/candidates/skills');
+        return response.data;
     }
 };
 
 export const jobService = {
-    getAll: async (companyId = null) => {
-        let url = '/jobs';
-        if (companyId) {
-            url += `?companyId=${companyId}`;
+    getAll: async (filters = {}) => {
+        let params = {};
+        // Backward compatibility: if filters is likely an ID (not object)
+        if (filters && typeof filters !== 'object') {
+            params = { companyId: filters };
+        } else if (filters) {
+            params = filters;
         }
-        const response = await api.get(url);
+        const response = await api.get('/jobs', { params });
         return response.data;
     },
     getStats: async (jobId) => {
@@ -107,6 +144,10 @@ export const jobService = {
     },
     create: async (jobData) => {
         const response = await api.post('/jobs', jobData);
+        return response.data;
+    },
+    update: async (id, jobData) => {
+        const response = await api.put(`/jobs/${id}`, jobData);
         return response.data;
     },
     delete: async (id) => {
@@ -121,8 +162,8 @@ export const jobService = {
 };
 
 export const applicationService = {
-    getAll: async () => {
-        const response = await api.get('/applications');
+    getAll: async (filters = {}) => {
+        const response = await api.get('/applications', { params: filters });
         return response.data;
     },
     getByJobId: async (jobId) => {
@@ -137,6 +178,39 @@ export const applicationService = {
         const response = await api.patch(`/applications/${applicationId}/status`, newStatus, {
             headers: { 'Content-Type': 'application/json' }
         });
+        return response.data;
+    },
+    getById: async (id) => {
+        const response = await api.get(`/applications/${id}`);
+        return response.data;
+    },
+    getByCandidateId: async (candidateId) => {
+        const response = await api.get(`/applications/candidate/${candidateId}`);
+        return response.data;
+    },
+    delete: async (id) => {
+        await api.delete(`/applications/${id}`);
+    }
+};
+
+export const userService = {
+    getAll: async () => {
+        const response = await api.get('/users');
+        return response.data;
+    },
+    getById: async (id) => {
+        const response = await api.get(`/users/${id}`);
+        return response.data;
+    },
+    update: async (id, userData) => {
+        const response = await api.put(`/users/${id}`, userData);
+        return response.data;
+    },
+    delete: async (id) => {
+        await api.delete(`/users/${id}`);
+    },
+    checkUsername: async (username) => {
+        const response = await api.get(`/users/check-username/${username}`);
         return response.data;
     }
 };

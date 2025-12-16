@@ -3,10 +3,13 @@ import { Building2, Send, Eye, CheckCircle, XCircle, Loader2, UserCheck } from '
 import { useNavigate } from 'react-router-dom';
 import { authService, applicationService, candidateService, jobService } from '../services/api';
 import Badge from '../components/ui/Badge';
+import CoderNavbar from '../components/dashboard/CoderNavbar';
+import ApplicationDetailsModal from '../components/dashboard/ApplicationDetailsModal';
+import { toast } from 'sonner';
 
 // --- Application Card Component ---
-const ApplicationCard = ({ application }) => (
-    <div className="bg-white rounded-[12px] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_4px_16px_rgba(101,91,233,0.15)] hover:border-[#655be9]/30 transition-all cursor-pointer group">
+const ApplicationCard = ({ application, onClick }) => (
+    <div onClick={() => onClick(application)} className="bg-white rounded-[12px] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-gray-100 hover:shadow-[0_4px_16px_rgba(101,91,233,0.15)] hover:border-[#655be9]/30 transition-all cursor-pointer group">
 
         <div className="flex justify-between items-start mb-3">
             <h3 className="text-[#191e4a] text-[18px] font-bold group-hover:text-[#655be9] transition-colors">
@@ -29,7 +32,7 @@ const ApplicationCard = ({ application }) => (
 );
 
 // --- Kanban Column Component ---
-const StatusColumn = ({ title, icon: Icon, apps = [], color = "#191e4a" }) => {
+const StatusColumn = ({ title, icon: Icon, apps = [], color = "#191e4a", onCardClick }) => {
     return (
         <div className="flex flex-col min-h-[400px] w-full">
             {/* Column Header */}
@@ -44,7 +47,7 @@ const StatusColumn = ({ title, icon: Icon, apps = [], color = "#191e4a" }) => {
             {/* Card List */}
             <div className="flex flex-col gap-4">
                 {apps.length > 0 ? (
-                    apps.map((app) => <ApplicationCard key={app.id} application={app} />)
+                    apps.map((app) => <ApplicationCard key={app.id} application={app} onClick={onCardClick} />)
                 ) : (
                     <div className="h-32 border-2 border-dashed border-gray-200 rounded-[12px] flex items-center justify-center text-gray-300 text-sm font-medium">
                         No applications
@@ -66,6 +69,9 @@ export default function ApplicationTracking() {
         rejected: [],
         accepted: []
     });
+
+    const [selectedApplication, setSelectedApplication] = useState(null);
+    const [withdrawLoading, setWithdrawLoading] = useState(false);
 
     useEffect(() => {
         loadApplications();
@@ -138,6 +144,29 @@ export default function ApplicationTracking() {
         }
     };
 
+    const handleCardClick = (app) => {
+        setSelectedApplication(app);
+    };
+
+    const handleWithdrawApplication = async (appId) => {
+        if (!confirm("Are you sure you want to withdraw this application?")) return;
+
+        try {
+            setWithdrawLoading(true);
+            await applicationService.delete(appId);
+            toast.success("Application withdrawn successfully");
+
+            // Refresh list
+            await loadApplications();
+            setSelectedApplication(null);
+        } catch (error) {
+            console.error("Error withdrawing application", error);
+            toast.error("Failed to withdraw application");
+        } finally {
+            setWithdrawLoading(false);
+        }
+    };
+
     const handleLogout = () => {
         authService.logout();
         navigate('/login');
@@ -154,31 +183,8 @@ export default function ApplicationTracking() {
 
     return (
         <div className="min-h-screen bg-[#fafafa] font-['Inter',sans-serif]">
-
             {/* Navbar */}
-            <nav className="bg-white border-b border-gray-200 py-4 px-8 flex justify-between items-center sticky top-0 z-50 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-[#191e4a] text-[28px] font-black tracking-tighter">HireTech</h1>
-                    <Badge text="CODER" type="green" />
-                </div>
-
-                {/* Navigation Links */}
-                <div className="hidden md:flex items-center gap-8 text-[#191e4a] font-bold text-[14px]">
-                    <button
-                        onClick={() => navigate('/dashboard-coder')}
-                        className="hover:text-[#655be9] transition-colors opacity-60 hover:opacity-100"
-                    >
-                        Search For Applications
-                    </button>
-                    <button className="text-[#655be9] relative">
-                        My Applications
-                        <span className="absolute -bottom-[21px] left-0 w-full h-[3px] bg-[#655be9] rounded-t-full"></span>
-                    </button>
-                    <button onClick={handleLogout} className="hover:text-[#655be9] transition-colors opacity-60 hover:opacity-100">
-                        Log Out
-                    </button>
-                </div>
-            </nav>
+            <CoderNavbar />
 
             <main className="max-w-[1400px] mx-auto px-6 py-10">
 
@@ -196,6 +202,7 @@ export default function ApplicationTracking() {
                         icon={Send}
                         apps={applications.pending}
                         color="#6b7280"
+                        onCardClick={handleCardClick}
                     />
 
                     <StatusColumn
@@ -203,6 +210,7 @@ export default function ApplicationTracking() {
                         icon={Eye}
                         apps={applications.underReview}
                         color="#655be9"
+                        onCardClick={handleCardClick}
                     />
 
                     <StatusColumn
@@ -210,6 +218,7 @@ export default function ApplicationTracking() {
                         icon={CheckCircle}
                         apps={applications.interview}
                         color="#f59e0b"
+                        onCardClick={handleCardClick}
                     />
 
                     <StatusColumn
@@ -217,6 +226,7 @@ export default function ApplicationTracking() {
                         icon={UserCheck}
                         apps={applications.accepted}
                         color="#10b981"
+                        onCardClick={handleCardClick}
                     />
 
                 </div>
@@ -229,10 +239,18 @@ export default function ApplicationTracking() {
                             icon={XCircle}
                             apps={applications.rejected}
                             color="#ef4444"
+                            onCardClick={handleCardClick}
                         />
                     </div>
                 )}
             </main>
+
+            <ApplicationDetailsModal
+                application={selectedApplication}
+                onClose={() => setSelectedApplication(null)}
+                onWithdraw={handleWithdrawApplication}
+                loading={withdrawLoading}
+            />
         </div>
     );
 }
