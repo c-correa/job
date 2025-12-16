@@ -22,6 +22,8 @@ public class ApplicationDto
     
     [StringLength(1000)]
     public string? CoverLetter { get; set; }
+
+    public string? ResumeUrl { get; set; }
     
     [Required]
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;

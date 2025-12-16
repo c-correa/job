@@ -156,6 +156,9 @@ export default function LoginPage() {
                         value={formData.username}
                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     />
+                    <p className="text-xs text-gray-400 -mt-3 mb-4 ml-1">
+                        Usa tu nombre de usuario (ej: juanperez), no tu email.
+                    </p>
 
                     <InputField
                         label="Password"

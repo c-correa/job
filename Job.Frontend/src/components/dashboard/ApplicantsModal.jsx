@@ -98,6 +98,16 @@ const ApplicantsModal = ({ job, onClose }) => {
                                                 {app.coverLetter && (
                                                     <p className="text-[13px] text-gray-600 mt-2 italic">"{app.coverLetter}"</p>
                                                 )}
+                                                {app.resumeUrl && (
+                                                    <a
+                                                        href={`http://localhost:5000${app.resumeUrl}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 mt-2 text-[12px] font-bold text-[#655be9] hover:underline"
+                                                    >
+                                                        <Eye size={12} /> View CV/Resume
+                                                    </a>
+                                                )}
                                             </div>
 
                                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold ${statusInfo.color}`}>

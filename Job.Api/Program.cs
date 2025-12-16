@@ -35,6 +35,8 @@ Console.WriteLine("✅ Database context configured");
 
 // ========== Repository Registration (Infrastructure Layer) ==========
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 
 Console.WriteLine("✅ Repositories registered");
 
@@ -208,6 +210,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // Enable static files serving
 
 // Authentication & Authorization (MUST be in this order)
 app.UseAuthentication();

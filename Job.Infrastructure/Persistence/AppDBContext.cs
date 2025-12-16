@@ -43,6 +43,11 @@ public class AppDBContext : DbContext
     /// </summary>
     public DbSet<CandidateSkill> CandidateSkills { get; set; }
 
+    /// <summary>
+    /// Job skills table (many-to-many relationship)
+    /// </summary>
+    public DbSet<JobSkill> JobSkills { get; set; }
+
 
     /// <summary>
     /// Configure entity relationships and constraints
@@ -149,6 +154,24 @@ public class AppDBContext : DbContext
             entity.HasOne(e => e.CandidateProfile)
                 .WithMany(c => c.CandidateSkills)
                 .HasForeignKey(e => e.CandidateProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            // Store enum as integer in database
+            entity.Property(e => e.Skill)
+                .HasConversion<int>();
+        });
+
+        // Configure JobSkill entity
+        modelBuilder.Entity<JobSkill>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.JobId, e.Skill }).IsUnique();
+            entity.HasIndex(e => e.Skill);
+            
+            // One Job can have many JobSkills
+            entity.HasOne(e => e.Job)
+                .WithMany(j => j.JobSkills)
+                .HasForeignKey(e => e.JobId)
                 .OnDelete(DeleteBehavior.Cascade);
                 
             // Store enum as integer in database

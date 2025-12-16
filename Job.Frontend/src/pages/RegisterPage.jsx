@@ -170,13 +170,18 @@ export default function RegisterPage() {
 
         } catch (err) {
             console.error(err);
-            setError(err.message);
+            // Extract the specific error message from the backend if available
+            const errorMessage = err.response?.data?.message || err.message || "Error desconocido en el registro";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     if (success) {
+        const generatedUsername = `${formData.firstName}${formData.lastName}`.toLowerCase().replace(/\s+/g, '');
+        const targetDashboard = role === 'candidate' ? '/dashboard-coder' : '/dashboard';
+
         return (
             <div className="min-h-screen bg-[#f2f6ff] flex items-center justify-center p-4 font-['Inter',sans-serif]">
                 <div className="bg-white w-full max-w-[480px] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-10 text-center">
@@ -184,12 +189,19 @@ export default function RegisterPage() {
                         <Briefcase size={32} />
                     </div>
                     <h2 className="text-2xl font-black text-[#191e4a] mb-2">¡Cuenta Creada!</h2>
-                    <p className="text-gray-500 mb-6">Tu perfil de {role === 'candidate' ? 'Candidato' : 'Empresa'} ha sido configurado correctamente.</p>
+                    <p className="text-gray-500 mb-2">Tu perfil de {role === 'candidate' ? 'Candidato' : 'Empresa'} ha sido configurado correctamente.</p>
+
+                    <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+                        <p className="text-sm text-blue-600 font-medium mb-1">Tu nombre de usuario es:</p>
+                        <p className="text-xl font-bold text-[#655be9] tracking-wide">{generatedUsername}</p>
+                        <p className="text-xs text-blue-400 mt-1">Úsalo para iniciar sesión en el futuro</p>
+                    </div>
+
                     <button
-                        onClick={() => navigate('/login')} // O redirigir a dashboard
+                        onClick={() => navigate(targetDashboard)}
                         className="w-full bg-[#655be9] hover:bg-[#544bc2] text-white h-[48px] rounded-[8px] font-bold text-[16px] shadow-lg shadow-[#655be9]/30 transition-all text-center flex items-center justify-center"
                     >
-                        Ir a Iniciar Sesión
+                        Ir al Dashboard
                     </button>
                 </div>
             </div>

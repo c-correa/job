@@ -45,6 +45,12 @@ public class Application
     /// </summary>
     [StringLength(1000, ErrorMessage = "Cover letter cannot exceed 1000 characters")]
     public string? CoverLetter { get; set; }
+
+    /// <summary>
+    /// URL to the specific resume/CV for this application
+    /// </summary>
+    [StringLength(500)]
+    public string? ResumeUrl { get; set; }
     
     /// <summary>
     /// Application status (Pending, UnderReview, Accepted, Rejected, etc.)
