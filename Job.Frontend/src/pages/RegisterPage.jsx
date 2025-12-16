@@ -68,6 +68,8 @@ export default function RegisterPage() {
     const navigate = useNavigate();
     const [role, setRole] = useState('candidate');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(null);
     const [formData, setFormData] = useState({
         firstName: '', lastName: '', email: '', password: '',
         experience: '', skills: '', companyName: ''
@@ -76,6 +78,7 @@ export default function RegisterPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
         try {
             const baseUsername = `${formData.firstName}${formData.lastName}`.toLowerCase().replace(/\s+/g, '');
@@ -125,15 +128,48 @@ export default function RegisterPage() {
             if (!profileResponse.ok) throw new Error(`Error creating ${role} profile`);
 
             toast.success('Account Created!', { description: `Welcome ${formData.firstName}!` });
-            setTimeout(() => navigate('/login'), 1500);
+            setSuccess(true);
 
         } catch (err) {
             console.error(err);
-            toast.error('Registration Failed', { description: err.message || 'Something went wrong.' });
+            // Extract the specific error message from the backend if available
+            const errorMessage = err.response?.data?.message || err.message || "Error desconocido en el registro";
+            setError(errorMessage);
+            toast.error('Registration Failed', { description: errorMessage });
         } finally {
             setLoading(false);
         }
     };
+
+    if (success) {
+        const generatedUsername = `${formData.firstName}${formData.lastName}`.toLowerCase().replace(/\s+/g, '');
+        const targetDashboard = role === 'candidate' ? '/dashboard-coder' : '/dashboard';
+
+        return (
+            <div className="min-h-screen bg-[#f2f6ff] flex items-center justify-center p-4 font-['Inter',sans-serif]">
+                <div className="bg-white w-full max-w-[480px] rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-10 text-center">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Briefcase size={32} />
+                    </div>
+                    <h2 className="text-2xl font-black text-[#191e4a] mb-2">¡Cuenta Creada!</h2>
+                    <p className="text-gray-500 mb-2">Tu perfil de {role === 'candidate' ? 'Candidato' : 'Empresa'} ha sido configurado correctamente.</p>
+
+                    <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+                        <p className="text-sm text-blue-600 font-medium mb-1">Tu nombre de usuario es:</p>
+                        <p className="text-xl font-bold text-[#655be9] tracking-wide">{generatedUsername}</p>
+                        <p className="text-xs text-blue-400 mt-1">Úsalo para iniciar sesión en el futuro</p>
+                    </div>
+
+                    <button
+                        onClick={() => navigate(targetDashboard)}
+                        className="w-full bg-[#655be9] hover:bg-[#544bc2] text-white h-[48px] rounded-[8px] font-bold text-[16px] shadow-lg shadow-[#655be9]/30 transition-all text-center flex items-center justify-center"
+                    >
+                        Ir al Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white flex font-['Inter',sans-serif]">
@@ -182,6 +218,11 @@ export default function RegisterPage() {
                     <div className="mb-8 mt-8 lg:mt-0">
                         <h2 className="text-[#191e4a] text-[32px] font-black tracking-tight mb-2">Create Account</h2>
                         <p className="text-gray-500 text-[16px]">Join HireTech today. It's free and takes 1 minute.</p>
+                        {error && (
+                            <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg text-sm font-medium border border-red-100 animate-in fade-in slide-in-from-top-2">
+                                {error}
+                            </div>
+                        )}
                     </div>
 
                     <form onSubmit={handleSubmit}>

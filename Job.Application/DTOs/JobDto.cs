@@ -36,6 +36,10 @@ public class JobDto
     
     public bool IsActive { get; set; } = true;
     
+    public WorkModality? WorkModality { get; set; }
+    
+    public List<JobSkillDto>? JobSkills { get; set; }
+    
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

@@ -21,6 +21,11 @@ public class MappingProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.CompanyProfile, opt => opt.Ignore())
             .ForMember(dest => dest.Applications, opt => opt.Ignore());
+
+        // JobSkill mappings
+        CreateMap<JobSkill, JobSkillDto>()
+            .ReverseMap()
+            .ForMember(dest => dest.Job, opt => opt.Ignore());
         
         // CandidateSkill mappings
         CreateMap<CandidateSkill, CandidateSkillDto>()

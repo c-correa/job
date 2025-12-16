@@ -14,12 +14,12 @@ namespace Job.Controllers;
 [Route("api/[controller]")]
 public class JobsController : ControllerBase
 {
-    private readonly IGenericRepository<Domain.Entities.Job> _repository;
+    private readonly IJobRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<JobsController> _logger;
 
     public JobsController(
-        IGenericRepository<Domain.Entities.Job> repository,
+        IJobRepository repository,
         IMapper mapper,
         ILogger<JobsController> logger)
     {
@@ -42,7 +42,7 @@ public class JobsController : ControllerBase
     {
         try
         {
-            var jobs = await _repository.GetAllAsync();
+            var jobs = await _repository.GetAllWithDetailsAsync();
             
             if (companyId.HasValue)
             {
@@ -78,7 +78,7 @@ public class JobsController : ControllerBase
     {
         try
         {
-            var job = await _repository.GetByIdAsync(id);
+            var job = await _repository.GetByIdWithDetailsAsync(id);
             
             if (job == null)
             {

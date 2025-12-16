@@ -88,4 +88,14 @@ public class Job
     /// Collection of applications for this job
     /// </summary>
     public ICollection<Application>? Applications { get; set; }
+
+    /// <summary>
+    /// Work modality (Remote, OnSite, Hybrid)
+    /// </summary>
+    public WorkModality? WorkModality { get; set; }
+
+    /// <summary>
+    /// Structured collection of required skills
+    /// </summary>
+    public ICollection<JobSkill>? JobSkills { get; set; }
 }

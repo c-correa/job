@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-import { Building2, MapPin, DollarSign, Loader2, CheckCircle } from 'lucide-react';
+import { Building2, MapPin, DollarSign, Loader2, CheckCircle, Upload } from 'lucide-react';
 import Badge from '../ui/Badge';
-import { authService, candidateService, applicationService } from '../../services/api';
+import { authService, candidateService, applicationService, fileService } from '../../services/api';
 
 export default function JobDetailView({ job, onApplicationSubmitted }) {
     const [applying, setApplying] = useState(false);
     const [applied, setApplied] = useState(false);
     const [error, setError] = useState(null);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     if (!job) return <div className="bg-white rounded-[16px] p-8 h-full flex items-center justify-center text-gray-400">Select a job to view details</div>;
 
     const skills = job.requiredSkills && typeof job.requiredSkills === 'string'
         ? job.requiredSkills.split(',')
         : [];
+
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
 
     const handleApply = async () => {
         try {
@@ -42,11 +50,28 @@ export default function JobDetailView({ job, onApplicationSubmitted }) {
                 return;
             }
 
+            let resumeUrl = null;
+            if (selectedFile) {
+                setUploading(true);
+                try {
+                    const uploadResponse = await fileService.upload(selectedFile);
+                    resumeUrl = uploadResponse.url;
+                } catch (uploadErr) {
+                    console.error("Error uploading file:", uploadErr);
+                    setError("Failed to upload CV. Please try again.");
+                    setApplying(false);
+                    setUploading(false);
+                    return;
+                }
+                setUploading(false);
+            }
+
             // Create application
             await applicationService.create({
                 jobId: job.id,
                 candidateProfileId: candidateProfile.id,
-                coverLetter: `Application for ${job.title}`
+                coverLetter: `Application for ${job.title}`,
+                resumeUrl: resumeUrl
             });
 
             setApplied(true);
@@ -61,6 +86,7 @@ export default function JobDetailView({ job, onApplicationSubmitted }) {
             }
         } finally {
             setApplying(false);
+            setUploading(false);
         }
     };
 
@@ -101,6 +127,33 @@ export default function JobDetailView({ job, onApplicationSubmitted }) {
                 {job.description}
             </div>
 
+            {/* CV Upload Section */}
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attach your CV/Resume (Optional)
+                </label>
+                <div className="flex items-center gap-3">
+                    <label className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-600">
+                        <Upload size={16} />
+                        <span>{selectedFile ? selectedFile.name : "Choose file (PDF, DOCX)"}</span>
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx"
+                            onChange={handleFileChange}
+                        />
+                    </label>
+                    {selectedFile && (
+                        <button
+                            onClick={() => setSelectedFile(null)}
+                            className="text-xs text-red-500 hover:text-red-700"
+                        >
+                            Remove
+                        </button>
+                    )}
+                </div>
+            </div>
+
             {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
                     {error}
@@ -122,7 +175,7 @@ export default function JobDetailView({ job, onApplicationSubmitted }) {
                         {applying ? (
                             <>
                                 <Loader2 className="animate-spin" size={20} />
-                                Applying...
+                                {uploading ? 'Uploading CV...' : 'Applying...'}
                             </>
                         ) : (
                             'Apply Now'
