@@ -286,7 +286,7 @@ export default function CoderDashboard() {
                 <div className="flex flex-col lg:flex-row gap-6 items-start">
 
                     {/* Left: Job List */}
-                    <div className="w-full lg:w-1/3 flex flex-col h-[calc(100vh-380px)] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                    <div className="w-full lg:w-1/3 flex flex-col space-y-3">
                         {filteredJobs.length > 0 ? (
                             filteredJobs.map((job) => (
                                 <JobListItem

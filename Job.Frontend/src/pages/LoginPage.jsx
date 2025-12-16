@@ -125,34 +125,9 @@ export default function LoginPage() {
                         <ArrowLeft size={18} /> Back
                     </button>
 
-                    <RoleSwitcher role={role} setRole={setRole} />
-
-                    <InputField
-                        label="Username"
-                        type="text"
-                        placeholder="juanperez"
-                        icon={User}
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    />
-                    <p className="text-xs text-gray-400 -mt-3 mb-4 ml-1">
-                        Usa tu nombre de usuario (ej: juanperez), no tu email.
-                    </p>
-
-                    <InputField
-                        label="Password"
-                        type="password"
-                        placeholder="••••••••"
-                        icon={Lock}
-                        isPassword={true}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-
-                    <div className="flex justify-end mb-6">
-                        <button type="button" className="text-[12px] text-gray-400 hover:text-[#655be9] font-medium transition-colors">
-                            Forgot password?
-                        </button>
+                    <div className="mb-10 text-center lg:text-left">
+                        <h2 className="text-[#191e4a] text-[32px] font-black tracking-tight mb-2">Welcome Back</h2>
+                        <p className="text-gray-500 text-[16px]">Please enter your details to sign in.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-2">
